@@ -1,0 +1,14 @@
+
+# Non-tailorable Line Breaking Classes
+$BK = [:LineBreak = Mandatory_Break:];      # Cause a line break (after)
+$CR = [:LineBreak = CR:];                   # Cause a line break (after), except between CR and LF
+$LF = [:LineBreak = LF:];                   # Cause a line break (after)
+#$CM = [:LineBreak = Combining_Mark:];
+$NL = [:LineBreak = Next_Line:];
+$SG = [:LineBreak = Surrogate:];
+$WJ = [:LineBreak = Word_Joiner:];
+$ZW = [:LineBreak = ZWSpace:];
+
+
+
+
