@@ -1,14 +1,56 @@
+#
+# http://userguide.icu-project.org/boundaryanalysis
+# http://www.unicode.org/reports/tr14/
+# http://source.icu-project.org/repos/icu/icu/tags/release-4-0/source/data/brkitr/
 
 # Non-tailorable Line Breaking Classes
-$BK = [:LineBreak = Mandatory_Break:];      # Cause a line break (after)
-$CR = [:LineBreak = CR:];                   # Cause a line break (after), except between CR and LF
-$LF = [:LineBreak = LF:];                   # Cause a line break (after)
-#$CM = [:LineBreak = Combining_Mark:];
+$BK = [:LineBreak = Mandatory_Break:];
+$CR = [:LineBreak = CR:];
+$LF = [:LineBreak = LF:];
+$CM = [:LineBreak = Combining_Mark:];
 $NL = [:LineBreak = Next_Line:];
 $SG = [:LineBreak = Surrogate:];
 $WJ = [:LineBreak = Word_Joiner:];
 $ZW = [:LineBreak = ZWSpace:];
+$GL = [:LineBreak = Glue:];
+$SP = [:LineBreak = Space:];
+
+# Break Opportunities
+$B2 = [:LineBreak = Break_Both:];
+$BA = [:LineBreak = Break_After:];
+$BB = [:LineBreak = Break_Before:];
+$HY = [:LineBreak = Hyphen:];
+$CB = [:LineBreak = Contingent_Break:];
+
+# Numberic Context
+$IS = [:LineBreak = Inseperable:];
+$NU = [:LineBreak = Numeric:];
+$PO = [:LineBreak = Postfix_Numeric:];
+$PR = [:LineBreak = Prefix_Numeric:];
+$SY = [:LineBreak = Break_Symbols:];
+
+# Other Characters
+$AI = [:LineBreak = Ambiguous:];
+$AL = [:LineBreak = Alphabetic:];
+$CJ = [:LineBreak = Conditional_Japanese_Starter:];
+$H2 = [:LineBreak = H2:];
+$H3 = [:LineBreak = H3:];
+$HL = [:LineBreak = Hebrew_Letter:];
+$ID = [:LineBreak = Ideographic:];
+$JL = [:LineBreak = JL:];
+$JV = [:LineBreak = JV:];
+$JT = [:LineBreak = JT:];
+$RI = [:LineBreak = Regional_Indicator:];
+$SA = [:LineBreak = Complex_Context:];
+$XX = [:LineBreak = Unknown:];
 
 
+# Dictionary character set, for triggering language-based break engines. Currently
+# limited to LineBreak=Complex_Context. Note that this set only works in Unicode
+# 5.0 or later as the definition of Complex_Context was corrected to include all
+# characters requiring dictionary break.
+$dictionary = [:LineBreak = Complex_Context:];
 
-
+!!chain;
+!!forward;
+$CR $LF;
