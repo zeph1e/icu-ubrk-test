@@ -31,7 +31,7 @@ endif
 #  the source filename which have main function should be same to target name
 #  (with file extenstion).
 TARGETS := \
-	following
+	ubrk
 
 # specify objects being referenced from $(TARGETS)
 COMMONOBJ := \
