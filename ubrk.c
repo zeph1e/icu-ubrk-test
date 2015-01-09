@@ -75,7 +75,7 @@ static struct option* parse_option(int argc, char *argv[])
 
     LOG("option :\n test type=%s\n rule file=%s\n input file=%s\n line width=%d\n",
             _opt.type == forward ? "forward" : "reverse", _opt.rulef, _opt.inputf, _opt.width);
-        
+
     return &_opt;
 }
 
@@ -117,11 +117,11 @@ inline size_t read_file(const char* file, UChar* buf, size_t bufcnt)
 }
 
 // test cases
-bool test_following(UBreakIterator*,int,UChar*,size_t)
+bool test_following(UBreakIterator* it, int width, UChar* text, size_t textcnt)
 {
 }
 
-bool test_preceding(UBreakIterator*,int,UChar*,size_t)
+bool test_preceding(UBreakIterator* it, int width, UChar* text, size_t textcnt)
 {
 }
 
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 
     rulesize = get_safe_bufsize(opt->rulef);
     inputsize = get_safe_bufsize(opt->inputf);
-    
+
     rule = (UChar*) malloc(rulesize);
     input = (UChar*) malloc(inputsize);
     if (!rule || !input) {
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
         goto END;
     }
 
-    
+
 
 END:
     if (it) ubrk_close(it);
