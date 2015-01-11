@@ -367,7 +367,7 @@ $NUcm  $HLcm;
 #
 # LB 24
 #
-#$PRcm $IDcm;
+$PRcm $IDcm;
 $PRcm ($ALcm | $HLcm);
 $POcm ($ALcm | $HLcm);
 

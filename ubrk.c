@@ -10,10 +10,12 @@
 
 #include <unicode/ustdio.h>
 #include <unicode/ubrk.h>
+#include <unicode/ucnv.h>
+
 #include <execinfo.h>
 #include <signal.h>
 
-#define DEBUG           1
+#define DEBUG           0
 #define LINE_OVERFLOW   1
 
 #if defined(DEBUG) && DEBUG
@@ -29,6 +31,7 @@
 #define DEFAULT_INPUT  "input"
 #define DEFAULT_WIDTH   40
 #define DEFAULT_TEST    0
+#define MAX_LINE_BUF    4096
 
 const char *optlist = "r:w:fvhs";
 enum test_type {
@@ -147,7 +150,7 @@ inline size_t get_safe_bufsize(const char* file)
         perror(file);
         return 0;
     }
-    LOG("%s: file=%s, size=%d, returns=%d\n",
+    LOG("%s: file=%s, size=%ld, returns=%ld\n",
         __FUNCTION__, file, st.st_size, (st.st_size + 1) * sizeof(UChar));
     return (st.st_size + 1) * sizeof(UChar);
 }
@@ -171,32 +174,132 @@ inline size_t read_file(const char* file, UChar* buf, size_t bufcnt)
     return readcnt;
 }
 
-// test cases
-bool test_next(UBreakIterator* it, int width, UChar* text, size_t textcnt)
+struct lineiterator {
+    int start;
+    int pos;
+};
+
+inline bool lineiterator_empty(struct lineiterator* lit)
 {
+    return lit->start == lit->pos;
 }
 
-bool test_previous(UBreakIterator* it, int width, UChar* text, size_t textcnt)
+inline void lineiterator_reset(struct lineiterator* lit, int start)
 {
+    lit->start = lit->pos = start;
 }
 
-bool test_following(UBreakIterator* it, int width, UChar* text, size_t textcnt)
+inline int lineiterator_width(struct lineiterator* lit)
 {
+    int width = lit->start - lit->pos;
+    return width < 0 ? -width : width;
 }
 
-bool test_preceding(UBreakIterator* it, int width, UChar* text, size_t textcnt)
+inline void lineiterator_append(struct lineiterator* lit, size_t textcnt)
 {
+    lit->pos += textcnt;
+}
+
+inline void lineiterator_prepend(struct lineiterator* lit, size_t textcnt)
+{
+    lit->pos -= textcnt;
+}
+
+static void lineiterator_print(struct lineiterator* lit, UConverter* ucnv, UChar* text)
+{
+    LOG("start=%d end=%d (count=%d)\n", lit->start, lit->pos, lit->pos - lit->start);
+    UErrorCode status;
+    char dest[4096];
+    int cnt = lineiterator_width(lit);
+    //int destsize = (cnt + 1) * 4;
+    //char* dest = (char*) malloc((width + 1) * 4);
+    UChar *src = (lit->start < lit->pos) ? &text[lit->start] : &text[lit->pos];
+    status = U_ZERO_ERROR;
+    int len = ucnv_fromUChars(ucnv, dest, sizeof(dest), src, cnt, &status);
+    if (U_FAILURE(status)) {
+        ERR("Unable to open codepage converter: %s(%d)\n", u_errorName(status), status);
+        return;
+    } 
+    puts(dest);
+
 }
 
 static bool run_break_test(UBreakIterator* it, enum test_type type, int width, UChar* text, size_t textcnt)
 {
-    static testcase_t _tc[] = {
-        &test_next,
-        &test_previous,
-        &test_following,
-        &test_preceding,
-    };
-    return _tc[type](it, width, text, textcnt);
+    struct lineiterator lit;
+    bool is_forward_rule = ((type % 2) == forward);
+    int textpos;
+    UConverter* ucnv;
+    UErrorCode status;
+
+    status = U_ZERO_ERROR;
+    ucnv = ucnv_open("UTF-8", &status);
+    if (U_FAILURE(status)) {
+        ERR("Unable to open codepage converter: %s(%d)\n", u_errorName(status), status);
+        return false;
+    } 
+
+    if (is_forward_rule) {
+        textpos = 0;
+    }
+    else {
+        textpos = textcnt;
+        ubrk_last(it);
+    }
+
+    lineiterator_reset(&lit, textpos);
+    while ((is_forward_rule && (textpos < textcnt)) ||
+           (!is_forward_rule && (textpos >= 0))) {
+        int next = 0;
+        switch(type) {
+        case forward:
+            next = ubrk_next(it);
+            break;
+        case reverse:
+            next = ubrk_previous(it);
+            break;
+        case safe_forward:
+            next = ubrk_following(it, textpos);
+            break;
+        case safe_reverse:
+            next = ubrk_preceding(it, textpos);
+            break;
+        }
+
+        if (next == UBRK_DONE) {
+            LOG("next = UBRK_DONE\n");
+            break;
+        }
+
+        int delta = is_forward_rule ? next - textpos : textpos - next;
+        int expwidth = lineiterator_width(&lit) + delta;
+        LOG("next=%d, delta=%d, expwidth=%d\n", next, delta, expwidth);
+        if (expwidth <= width || (expwidth > width && lineiterator_empty(&lit))) {
+            if (is_forward_rule) {
+                lineiterator_append(&lit, delta);
+                textpos += delta;
+            }
+            else {
+                lineiterator_prepend(&lit, delta);
+                textpos -= delta;
+            }
+            continue;
+        }
+#if 0
+        if (lineiterator_empty(&lit)) {
+            //puts("");
+            lineiterator_reset(&lit, textpos);
+            continue;
+        }
+#endif
+        lineiterator_print(&lit, ucnv, text);
+        //textpos += is_forward_rule ? 1 : -1;
+        lineiterator_reset(&lit, textpos);
+    }
+    lineiterator_print(&lit, ucnv, text);
+
+    ucnv_close(ucnv);
+    return true;
 }
 
 int main(int argc, char* argv[])
@@ -236,7 +339,7 @@ int main(int argc, char* argv[])
     it = ubrk_openRules(rule, -1, 0, -1, &parseErr, &status);
     if (U_FAILURE(status)) {
         ERR("Unable to open break iterator: %s(%d)\n", u_errorName(status), status);
-        LOG("Parse error at line=%d offset=%d\n", parseErr.line, parseErr.offset);
+        ERR("Parse error at line=%d offset=%d\n", parseErr.line, parseErr.offset);
         goto END;
     }
     status = U_ZERO_ERROR;
@@ -248,11 +351,11 @@ int main(int argc, char* argv[])
 
     result = run_break_test(it, opt->type, opt->width, input, inputlen);
 
-
-
 END:
     if (it) ubrk_close(it);
 
     if (rule) free(rule);
     if (input) free(input);
+
+    return (int)!result;
 }
