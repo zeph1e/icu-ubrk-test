@@ -43,7 +43,6 @@ $SY = [:LineBreak = Break_Symbols:];
 
 # Other Characters
 $AI = [:LineBreak = Ambiguous:];
-$AL = [:LineBreak = Alphabetic:];
 $CJ = [:LineBreak = Conditional_Japanese_Starter:];
 $H2 = [:LineBreak = H2:];
 $H3 = [:LineBreak = H3:];
@@ -55,11 +54,7 @@ $JT = [:LineBreak = JT:];
 $RI = [:LineBreak = Regional_Indicator:];
 $SA = [:LineBreak = Complex_Context:];
 $XX = [:LineBreak = Unknown:];
-
-# Custom
-$CJK = [ $ID $JL $JV $JT $H2 $H3 ]; # chinese, japanese, korean
-$OQ = [ \u275B \u275D ]; # open quotation
-$CQ = [ \u275C \u275E ]; # close quotation
+$AL = [[:LineBreak = Alphabetic:] $CJ $H2 $H3 $ID $JL $JV $JT];
 
 !!chain;
 !!LBCMNoChain;
@@ -148,7 +143,6 @@ $QUcm = $QU $CM*;
 $RIcm = $RI $CM*;
 $SYcm = $SY $CM*;
 $WJcm = $WJ $CM*;
-$CJKcm = $CJK $CM*;
 
 
 ## -------------------------------------------------
@@ -185,7 +179,6 @@ $QU $CM+;
 $RI $CM+;
 $SY $CM+;
 $WJ $CM+;
-$CJK $CM+;
 
 
 #
@@ -374,7 +367,7 @@ $NUcm  $HLcm;
 #
 # LB 24
 #
-$PRcm $IDcm;
+#$PRcm $IDcm;
 $PRcm ($ALcm | $HLcm);
 $POcm ($ALcm | $HLcm);
 
@@ -383,6 +376,7 @@ $POcm ($ALcm | $HLcm);
 #
 ($PRcm | $POcm)? ($OPcm | $HYcm)? $NUcm ($NUcm | $SYcm | $IScm)* ($CLcm | $CPcm)? ($PRcm | $POcm)?;
 
+
 # LB 26  Do not break a Korean syllable
 #
 $JLcm ($JLcm | $JVcm | $H2cm | $H3cm);
@@ -390,22 +384,22 @@ $JLcm ($JLcm | $JVcm | $H2cm | $H3cm);
 ($JTcm | $H3cm) $JTcm;
 
 # LB 27  Treat korean Syllable Block the same as ID  (don't break it)
-#($JLcm | $JVcm | $JTcm | $H2cm | $H3cm) $INcm;
-#($JLcm | $JVcm | $JTcm | $H2cm | $H3cm) $POcm;
-#$PRcm ($JLcm | $JVcm | $JTcm | $H2cm | $H3cm);
+($JLcm | $JVcm | $JTcm | $H2cm | $H3cm) $INcm;
+($JLcm | $JVcm | $JTcm | $H2cm | $H3cm) $POcm;
+$PRcm ($JLcm | $JVcm | $JTcm | $H2cm | $H3cm);
 
 # LB 28   Do not break between alphabetics
 #
-($ALcm | $HLcm | $CJKcm) ($ALcm | $HLcm | $CJKcm);
-$CM+ ($ALcm | $HLcm | $CJKcm);      # The $CM+ is from rule 10, an unattached CM is treated as AL
+($ALcm | $HLcm) ($ALcm | $HLcm);
+$CM+ ($ALcm | $HLcm);      # The $CM+ is from rule 10, an unattached CM is treated as AL
 
 # LB 29
-$IScm ($ALcm | $HLcm | $CJKcm);
+$IScm ($ALcm | $HLcm);
 
 # LB 30
-#($ALcm | $HLcm | $NUcm | $CJKcm) $OPcm;
-#$CM+ $OPcm;         # The $CM+ is from rule 10, an unattached CM is treated as AL.          
-#$CPcm ($ALcm | $HLcm | $NUcm | $CJKcm);
+($ALcm | $HLcm | $NUcm) $OPcm;
+$CM+ $OPcm;         # The $CM+ is from rule 10, an unattached CM is treated as AL.
+$CPcm ($ALcm | $HLcm | $NUcm);
 
 # LB 30a  Do not break between regional indicators.
 $RIcm $RIcm;
@@ -598,8 +592,8 @@ $CM* $IN $CM* $NU;
 
 # LB 23
 $CM* $PO $CM* $ID;
-$CM* $NU $CM* ($ALPlus | $HL | $CJK);
-$CM* ($ALPlus | $HL | $CJK) $CM* $NU;
+$CM* $NU $CM* ($ALPlus | $HL);
+$CM* ($ALPlus | $HL) $CM* $NU;
 
 # LB 24
 $CM* $ID $CM* $PR;
@@ -628,8 +622,8 @@ $CM* ($ALPlus | $HL) $CM* ($ALPlus | $HL);
 $CM* ($ALPlus | $HL) $CM* $IS;
 
 # LB 30
-$CM* $OP $CM* ($ALPlus | $HL | $CJK | $NU);
-$CM* ($ALPlus | $HL | $CJK | $NU) $CM* $CP;
+$CM* $OP $CM* ($ALPlus | $HL | $NU);
+$CM* ($ALPlus | $HL | $NU) $CM* $CP;
 
 # LB 30a
 $CM* $RI $CM* $RI;
